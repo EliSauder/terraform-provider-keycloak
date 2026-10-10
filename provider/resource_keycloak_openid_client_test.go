@@ -829,6 +829,7 @@ func TestAccKeycloakOpenidClient_excludeIssuerFromAuthResponse(t *testing.T) {
 func TestAccKeycloakOpenidClient_authenticationFlowBindingOverrides(t *testing.T) {
 	t.Parallel()
 	clientId := acctest.RandomWithPrefix("tf-acc")
+	flowAlias := acctest.RandomWithPrefix("tf-acc-flow")
 
 	resource.Test(t, resource.TestCase{
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
@@ -836,11 +837,11 @@ func TestAccKeycloakOpenidClient_authenticationFlowBindingOverrides(t *testing.T
 		CheckDestroy:             testAccCheckKeycloakOpenidClientDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testKeycloakOpenidClient_authenticationFlowBindingOverrides(clientId),
+				Config: testKeycloakOpenidClient_authenticationFlowBindingOverrides(clientId, flowAlias),
 				Check:  testAccCheckKeycloakOpenidClientAuthenticationFlowBindingOverrides("keycloak_openid_client.client", "keycloak_authentication_flow.another_flow"),
 			},
 			{
-				Config: testKeycloakOpenidClient_withoutAuthenticationFlowBindingOverrides(clientId),
+				Config: testKeycloakOpenidClient_withoutAuthenticationFlowBindingOverrides(clientId, flowAlias),
 				Check:  testAccCheckKeycloakOpenidClientAuthenticationFlowBindingOverrides("keycloak_openid_client.client", ""),
 			},
 		},
@@ -2282,14 +2283,14 @@ resource "keycloak_openid_client" "client" {
 	`, testAccRealm.Realm, clientId, standardFlowEnabled, implicitFlowEnabled, directAccessGrantsEnabled, serviceAccountsEnabled)
 }
 
-func testKeycloakOpenidClient_authenticationFlowBindingOverrides(clientId string) string {
+func testKeycloakOpenidClient_authenticationFlowBindingOverrides(clientId, flowAlias string) string {
 	return fmt.Sprintf(`
 data "keycloak_realm" "realm" {
 	realm = "%s"
 }
 
 resource "keycloak_authentication_flow" "another_flow" {
-  alias    = "anotherFlow"
+  alias    = "%s"
   realm_id = data.keycloak_realm.realm.id
   description = "this is another flow"
 }
@@ -2303,17 +2304,17 @@ resource "keycloak_openid_client" "client" {
 		direct_grant_id = "${keycloak_authentication_flow.another_flow.id}"
 	}
 }
-	`, testAccRealm.Realm, clientId)
+	`, testAccRealm.Realm, flowAlias, clientId)
 }
 
-func testKeycloakOpenidClient_withoutAuthenticationFlowBindingOverrides(clientId string) string {
+func testKeycloakOpenidClient_withoutAuthenticationFlowBindingOverrides(clientId, flowAlias string) string {
 	return fmt.Sprintf(`
 data "keycloak_realm" "realm" {
 	realm = "%s"
 }
 
 resource "keycloak_authentication_flow" "another_flow" {
-  alias    = "anotherFlow"
+  alias    = "%s"
   realm_id = data.keycloak_realm.realm.id
   description = "this is another flow"
 }
@@ -2323,7 +2324,7 @@ resource "keycloak_openid_client" "client" {
 	realm_id    = data.keycloak_realm.realm.id
 	access_type = "PUBLIC"
 }
-	`, testAccRealm.Realm, clientId)
+	`, testAccRealm.Realm, flowAlias, clientId)
 }
 
 func testKeycloakOpenidClient_loginTheme(clientId, loginTheme string) string {

@@ -483,6 +483,7 @@ func TestAccCheckKeycloakSamlClient_authenticationFlowBindingOverrides(t *testin
 	t.Parallel()
 
 	clientId := acctest.RandomWithPrefix("tf-acc")
+	flowAlias := acctest.RandomWithPrefix("tf-acc-flow")
 
 	resource.Test(t, resource.TestCase{
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
@@ -490,11 +491,11 @@ func TestAccCheckKeycloakSamlClient_authenticationFlowBindingOverrides(t *testin
 		CheckDestroy:             testAccCheckKeycloakSamlClientDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testKeycloakSamlClient_authenticationFlowBindingOverrides(clientId),
+				Config: testKeycloakSamlClient_authenticationFlowBindingOverrides(clientId, flowAlias),
 				Check:  testAccCheckKeycloakSamlClientAuthenticationFlowBindingOverrides("keycloak_saml_client.client", "keycloak_authentication_flow.another_flow"),
 			},
 			{
-				Config: testKeycloakSamlClient_withoutFlowBindingOverrides(clientId),
+				Config: testKeycloakSamlClient_withoutFlowBindingOverrides(clientId, flowAlias),
 				Check:  testAccCheckKeycloakSamlClientAuthenticationFlowBindingOverrides("keycloak_saml_client.client", ""),
 			},
 		},
@@ -933,14 +934,14 @@ resource "keycloak_saml_client" "saml_client" {
 	`, testAccRealm.Realm, clientId)
 }
 
-func testKeycloakSamlClient_authenticationFlowBindingOverrides(clientId string) string {
+func testKeycloakSamlClient_authenticationFlowBindingOverrides(clientId, flowAlias string) string {
 	return fmt.Sprintf(`
 data "keycloak_realm" "realm" {
 	realm = "%s"
 }
 
 resource "keycloak_authentication_flow" "another_flow" {
-  alias       = "anotherFlow"
+  alias       = "%s"
   realm_id    = data.keycloak_realm.realm.id
   description = "this is another flow"
 }
@@ -955,17 +956,17 @@ resource "keycloak_saml_client" "client" {
 		direct_grant_id = keycloak_authentication_flow.another_flow.id
 	}
 }
-	`, testAccRealm.Realm, clientId)
+	`, testAccRealm.Realm, flowAlias, clientId)
 }
 
-func testKeycloakSamlClient_withoutFlowBindingOverrides(clientId string) string {
+func testKeycloakSamlClient_withoutFlowBindingOverrides(clientId, flowAlias string) string {
 	return fmt.Sprintf(`
 data "keycloak_realm" "realm" {
 	realm = "%s"
 }
 
 resource "keycloak_authentication_flow" "another_flow" {
-  alias       = "anotherFlow"
+  alias       = "%s"
   realm_id    = data.keycloak_realm.realm.id
   description = "this is another flow"
 }
@@ -975,7 +976,7 @@ resource "keycloak_saml_client" "client" {
 	realm_id  = data.keycloak_realm.realm.id
 	name      = "test-saml-client"
 }
-	`, testAccRealm.Realm, clientId)
+	`, testAccRealm.Realm, flowAlias, clientId)
 }
 
 func testKeycloakSamlClient_extraConfig(clientId string, extraConfig map[string]string) string {
