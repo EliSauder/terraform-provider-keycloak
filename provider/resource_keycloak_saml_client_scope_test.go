@@ -122,7 +122,7 @@ func TestAccKeycloakSamlClientScope_consentScreenText(t *testing.T) {
 func TestAccKeycloakSamlClientScope_guiOrder(t *testing.T) {
 	t.Parallel()
 	clientScopeName := acctest.RandomWithPrefix("tf-acc")
-	guiOrder := acctest.RandIntRange(0, 1000)
+	guiOrder := acctest.RandIntRange(1, 1000)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV5ProviderFactories: testAccProtoV5ProviderFactories,
